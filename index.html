@@ -629,51 +629,45 @@
                 
             ]);
         })
-        .then(values=> {
-          console.log("Read value: ", values);
-          //Input Elements
-          const itemnameInput = document.getElementById("itemname");
-          const itemcatInput = document.getElementById("itemcat");
-          const quantityInput = document.getElementById("quantity");
-          const weightInput = document.getElementById("weight");
-          const maxweightInput = document.getElementById("maxweight");
-          const levelInput = document.getElementById("level");
-          const binposInput = document.getElementById("binpos");
-          const sensorlocInput = document.getElementById("sensorloc");
+        .then(values => {
+            console.log("Read value: ", values);
 
-          //Update input values
-          itemnameInput.value = new TextDecoder().decode(values[0]);
-          itemcatInput.value = new TextDecoder().decode(values[1]);
-          quantityInput.value = new TextDecoder().decode(values[2]);
-          weightInput.value = new TextDecoder().decode(values[3]);
-          maxweightInput.value = new TextDecoder().decode(values[4]);
-          levelInput.value = values[5].getUint8(0);
-          binposInput.value = new TextDecoder().decode(values[6]);
-          sensorlocInput.value = new TextDecoder().decode(values[7]);
+            //Input Elements
+            const itemnameInput = document.getElementById("itemname");
+            const itemcatInput = document.getElementById("itemcat");
+            const quantityInput = document.getElementById("quantity");
+            const weightInput = document.getElementById("weight");
+            const maxweightInput = document.getElementById("maxweight");
+            const levelInput = document.getElementById("level");
+            const binposInput = document.getElementById("binpos");
+            const sensorlocInput = document.getElementById("sensorloc");
 
-          //Enable input field
-          itemnameInput.disabled = false;
-          itemcatInput.disabled = false;
-          quantityInput.disabled = false;
-          weightInput.disabled = false;
-          maxweightInput.disabled = false;
-          levelInput.disabled = false;
-          binposInput.disabled = false;
-          sensorlocInput.disabled = false;
+            //Update input values safely (mobile-friendly)
+            itemnameInput.value   = new TextDecoder().decode(values[0].buffer);
+            itemcatInput.value    = new TextDecoder().decode(values[1].buffer);
+            quantityInput.value   = new TextDecoder().decode(values[2].buffer);
+            weightInput.value     = new TextDecoder().decode(values[3].buffer);
+            maxweightInput.value  = new TextDecoder().decode(values[4].buffer);
+            levelInput.value      = values[5].getUint8(0); // binary
+            binposInput.value     = new TextDecoder().decode(values[6].buffer);
+            sensorlocInput.value  = new TextDecoder().decode(values[7].buffer);
 
-          //To be deleted...
-          sensortypeValue.innerHTML = values[8].getUint8(0);
-          timestampContainer.innerHTML = getDateTime();
-            
-          //Enable save buttons
-          setButtonEnabled('saveItemNameButton', true);
-          setButtonEnabled('saveItemCatButton', true);
-          setButtonEnabled('saveQuantityButton', true);
-          setButtonEnabled('saveWeightButton', true);
-          setButtonEnabled('saveMaxWeightButton', true);
-          setButtonEnabled('saveLevelButton', true);
-          setButtonEnabled('saveBinPosButton', true);
-          setButtonEnabled('saveSensorLocButton', true);
+            //Enable input fields
+            [
+                itemnameInput, itemcatInput, quantityInput, weightInput,
+                maxweightInput, levelInput, binposInput, sensorlocInput
+            ].forEach(el => el.disabled = false);
+
+            //Handle sensor type separately
+            sensortypeValue.innerHTML = values[8].getUint8(0);
+            timestampContainer.innerHTML = getDateTime();
+
+            //Enable save buttons
+            [
+                'saveItemNameButton','saveItemCatButton','saveQuantityButton',
+                'saveWeightButton','saveMaxWeightButton','saveLevelButton',
+                'saveBinPosButton','saveSensorLocButton'
+            ].forEach(id => setButtonEnabled(id, true));
         })
         .catch(error => {
             console.log('Error: ', error);
