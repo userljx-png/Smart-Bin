@@ -527,7 +527,7 @@
             
             //Item Name
             itemnameListener = event => {
-                const value = new TextDecoder().decode(event.target.value);
+                const value = new TextDecoder().decode(event.target.value.buffer);
                 console.log("Item Name changed:", value);
                 itemnameValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
@@ -537,7 +537,7 @@
             
             //Item Category
             itemcatListener = event => {
-                const value = new TextDecoder().decode(event.target.value);
+                const value = new TextDecoder().decode(event.target.value.buffer);
                 console.log("Item Category changed:", value);
                 itemcatValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
@@ -547,7 +547,7 @@
 
             //Quantity
             quantityListener = event => {
-                const value = new TextDecoder().decode(event.target.value);
+                const value = new TextDecoder().decode(event.target.value.buffer);
                 console.log("Quantity Reading changed:", value);
                 quantityValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
@@ -557,7 +557,7 @@
 
             //Weight
             weightListener = event => {
-                const value = new TextDecoder().decode(event.target.value);
+                const value = new TextDecoder().decode(event.target.value.buffer);
                 console.log("Weight Reading changed:", value);
                 weightValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
@@ -567,7 +567,7 @@
 
             //Max Weight
             maxweightListener = event => {
-                const value = new TextDecoder().decode(event.target.value);
+                const value = new TextDecoder().decode(event.target.value.buffer);
                 console.log("Max Weight Reading changed:", value);
                 maxweightValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
@@ -587,7 +587,7 @@
             
             //Bin Position
             binposListener = event => {
-                const value = new TextDecoder().decode(event.target.value);
+                const value = new TextDecoder().decode(event.target.value.buffer);
                 console.log("Bin Position changed:", value);
                 binposValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
@@ -597,7 +597,7 @@
 
             //Sensor Location
             sensorlocListener = event => {
-                const value = new TextDecoder().decode(event.target.value);
+                const value = new TextDecoder().decode(event.target.value.buffer);
                 console.log("Sensor Location changed:", value);
                 sensorlocValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
