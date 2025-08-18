@@ -488,7 +488,7 @@
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
         navigator.bluetooth.requestDevice({
-            filters: [{services: [bleService]}],
+            filters: [{name: deviceName}],
             optionalServices: [bleService]
         })
         .then(device => {
@@ -539,7 +539,7 @@
             itemcatListener = event => {
                 const value = new TextDecoder().decode(event.target.value);
                 console.log("Item Category changed:", value);
-                itemcatValue.innerHTML = value;
+                itemcatValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             itemcatCharacteristicFound.addEventListener('characteristicvaluechanged', itemcatListener);
@@ -549,7 +549,7 @@
             quantityListener = event => {
                 const value = new TextDecoder().decode(event.target.value);
                 console.log("Quantity Reading changed:", value);
-                quantityValue.innerHTML = value;
+                quantityValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             quantityCharacteristicFound.addEventListener('characteristicvaluechanged', quantityListener);
@@ -559,7 +559,7 @@
             weightListener = event => {
                 const value = new TextDecoder().decode(event.target.value);
                 console.log("Weight Reading changed:", value);
-                weightValue.innerHTML = value;
+                weightValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             weightCharacteristicFound.addEventListener('characteristicvaluechanged', weightListener);
@@ -569,7 +569,7 @@
             maxweightListener = event => {
                 const value = new TextDecoder().decode(event.target.value);
                 console.log("Max Weight Reading changed:", value);
-                maxweightValue.innerHTML = value;
+                maxweightValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             maxweightCharacteristicFound.addEventListener('characteristicvaluechanged', maxweightListener);
@@ -579,7 +579,7 @@
             levelListener = event => {
                 const value = event.target.value.getUint8(0);
                 console.log("Level Reading changed:", value);
-                levelValue.innerHTML = value;
+                levelValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             levelCharacteristicFound.addEventListener('characteristicvaluechanged', levelListener);
@@ -589,7 +589,7 @@
             binposListener = event => {
                 const value = new TextDecoder().decode(event.target.value);
                 console.log("Bin Position changed:", value);
-                binposValue.innerHTML = value;
+                binposValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             binposCharacteristicFound.addEventListener('characteristicvaluechanged', binposListener);
@@ -599,7 +599,7 @@
             sensorlocListener = event => {
                 const value = new TextDecoder().decode(event.target.value);
                 console.log("Sensor Location changed:", value);
-                sensorlocValue.innerHTML = value;
+                sensorlocValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             sensorlocCharacteristicFound.addEventListener('characteristicvaluechanged', sensorlocListener);
@@ -609,7 +609,7 @@
             sensortypeListener = event => {
                 const value = event.target.value.getUint8(0);
                 console.log("Sensor Type Reading changed:", value);
-                sensortypeValue.innerHTML = value;
+                sensortypeValue.value = value;
                 timestampContainer.innerHTML = getDateTime();
             };   
             sensortypeCharacteristicFound.addEventListener('characteristicvaluechanged', sensortypeListener);
@@ -809,6 +809,4 @@
 
 </script>
 
-
 </html>
-
