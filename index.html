@@ -488,7 +488,7 @@
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
         navigator.bluetooth.requestDevice({
-            filters: [{name: deviceName}],
+            filters: [{services: [bleService]}],
             optionalServices: [bleService]
         })
         .then(device => {
@@ -811,3 +811,4 @@
 
 
 </html>
+
