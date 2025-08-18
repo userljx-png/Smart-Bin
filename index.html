@@ -544,11 +544,14 @@
                     else element.value = value;
                     timestampContainer.innerHTML = getDateTime();
                 };
+
                 characteristic.addEventListener('characteristicvaluechanged', listener);
+
                 characteristic.readValue().then(value => {
                     const decoded = decodeValue(value);
                     if (isNumeric) element.innerHTML = decoded;
                     else element.value = decoded;
+                    
                     setTimeout(() => characteristic.startNotifications(), 100);
                 });
                 return listener;
