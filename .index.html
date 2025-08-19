@@ -568,6 +568,7 @@
                         if (element.tagName === "INPUT") element.value = value;
                         else element.innerHTML = value;
                         timestampContainer.innerHTML = getDateTime();
+                        return characteristic.startNotifications();
                     };
 
                     characteristic.readValue()
@@ -605,26 +606,32 @@
                 ];
 
                 for (let c of allChars) {
-                    const listener = await setupNotification(c.char, c.el, c.type);
-                    // Save listener
-                    switch(c.el.id) {
-                        case 'itemname': itemnameListener = listener; break;
-                        case 'itemcat': itemcatListener = listener; break;
-                        case 'quantity': quantityListener = listener; break;
-                        case 'weight': weightListener = listener; break;
-                        case 'maxweight': maxweightListener = listener; break;
-                        case 'level': levelListener = listener; break;
-                        case 'binpos': binposListener = listener; break;
-                        case 'sensorloc': sensorlocListener = listener; break;
-                        case 'sensortype': sensortypeListener = listener; break;
+                    try {
+                        const listener = await setupNotification(c.char, c.el, c.type);
+                        // Save listener
+                        switch(c.el.id) {
+                            case 'itemname': itemnameListener = listener; break;
+                            case 'itemcat': itemcatListener = listener; break;
+                            case 'quantity': quantityListener = listener; break;
+                            case 'weight': weightListener = listener; break;
+                            case 'maxweight': maxweightListener = listener; break;
+                            case 'level': levelListener = listener; break;
+                            case 'binpos': binposListener = listener; break;
+                            case 'sensorloc': sensorlocListener = listener; break;
+                            case 'sensortype': sensortypeListener = listener; break;
+                        }
+                    } catch(err) {
+                        console.log("Failed to setup", c.el.id, err);
                     }
-                    await new Promise(res => setTimeout(res, 150)); // mobile safe delay
+                    await new Promise(res => setTimeout(res, 300)); // Increase delay for mobile stability
                 }
+
+                timestampContainer.innerHTML = getDateTime();
 
                 // Enable inputs/buttons after first read
                 const inputs = [itemnameValue, itemcatValue, quantityValue, weightValue, maxweightValue, levelValue, binposValue, sensorlocValue];
                 inputs.forEach(input => input.disabled = false);
-                
+
                 ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton']
                     .forEach(id => setButtonEnabled(id, true));
             }
