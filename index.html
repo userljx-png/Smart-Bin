@@ -558,43 +558,32 @@
 
             // Setup notifications for each characteristic
             function setupNotification(characteristic, element, type='string') {
-                const listener = event => {
-                    const value = decodeValue(event.target.value, type);
-                    if (element.tagName === "INPUT") element.value = value;
-                    else element.innerHTML = value;
-                    timestampContainer.innerHTML = getDateTime();
-                };
+                return new Promise((resolve, reject) => {
+                    const listener = event => {
+                        const value = decodeValue(event.target.value, type);
+                        if (element.tagName === "INPUT") element.value = value;
+                        else element.innerHTML = value;
+                        timestampContainer.innerHTML = getDateTime();
+                    };
 
-                function readValueWithRetry(retries = 15, delay = 400) {
-                    setTimeout(() => {  
-                        characteristic.readValue()
-                        .then(value => {
-                            const decoded = decodeValue(value, type);
-                            if (element.tagName === "INPUT") element.value = decoded;
-                            else element.innerHTML = decoded;
-                        })
-                        .catch(err => {
-                            if (retries > 0) {
-                                console.log("Retry read for", element.id, "Retries left:", retries);
-                                readValueWithRetry(retries -1, delay + 100);
-                            } else {
-                                console.log("Read failed for", element.id, err);
-                            }
-                        });
-                    }, delay); 
-                }
-                readValueWithRetry();
-
-                return characteristic.startNotifications()
+                    characteristic.readValue()
+                    .then(value => {
+                        const decoded = decodeValue(value, type);
+                        if (element.tagName === "INPUT") element.value = decoded;
+                        else element.innerHTML = decoded;
+                        // Start notifications after first read
+                        return characteristic.startNotifications();
+                    })
                     .then(() => {
                         characteristic.addEventListener('characteristicvaluechanged', listener);
                         console.log("Notifications started for", element.id);
-                        return listener;
+                        resolve(listener);  // Resolve after first read + notification started
                     })
                     .catch(err => {
                         console.log("Notification error:", err);
-                        return null;
+                        resolve(null);
                     });
+                });
             }
 
             // Safe mobile connect: stagger notifications to avoid mobile BLE overload
@@ -611,42 +600,40 @@
                     {char: sensortypeCharacteristicFound, el: sensortypeValue, type: 'uint8'}
                 ];
 
-                allChars.forEach((c, index) => {
-                    setTimeout(() => {
-                        const listenerPromise = setupNotification(c.char, c.el, c.type);
-                        listenerPromise.then(listener => {
-                            // save listeners globally for disconnect
-                            switch(c.el.id) {
-                                case 'itemname': itemnameListener = listener; break;
-                                case 'itemcat': itemcatListener = listener; break;
-                                case 'quantity': quantityListener = listener; break;
-                                case 'weight': weightListener = listener; break;
-                                case 'maxweight': maxweightListener = listener; break;
-                                case 'level': levelListener = listener; break;
-                                case 'binpos': binposListener = listener; break;
-                                case 'sensorloc': sensorlocListener = listener; break;
-                                case 'sensortype': sensortypeListener = listener; break;
-                            }
-                        });
-                    }, index * 200); // stagger 200ms per characteristic
+                const promises = allChars.map((c, index) => {
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            setupNotification(c.char, c.el, c.type).then(listener => {
+                                switch(c.el.id) {
+                                    case 'itemname': itemnameListener = listener; break;
+                                    case 'itemcat': itemcatListener = listener; break;
+                                    case 'quantity': quantityListener = listener; break;
+                                    case 'weight': weightListener = listener; break;
+                                    case 'maxweight': maxweightListener = listener; break;
+                                    case 'level': levelListener = listener; break;
+                                    case 'binpos': binposListener = listener; break;
+                                    case 'sensorloc': sensorlocListener = listener; break;
+                                    case 'sensortype': sensortypeListener = listener; break;
+                                }
+                                resolve();
+                            });
+                        }, index * 200);
+                    });
                 });
+
+                return Promise.all(promises);
             }
 
-
-
-            // Setup all characteristics
-            setupAllNotifications();
-
-            // Enable input fields and save buttons
-            const inputs = [
-                itemnameValue, itemcatValue, quantityValue, weightValue, 
-                maxweightValue, levelValue, binposValue, sensorlocValue
-            ];
-
-            inputs.forEach(input => {
-              input.disabled = false;
+            setupAllNotifications().then(() => {
+                // Enable input fields and save buttons only after first values loaded
+                const inputs = [
+                    itemnameValue, itemcatValue, quantityValue, weightValue, 
+                    maxweightValue, levelValue, binposValue, sensorlocValue
+                ];
+                inputs.forEach(input => input.disabled = false);
+                ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton'].forEach(id => setButtonEnabled(id, true));
             });
-            ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton'].forEach(id => setButtonEnabled(id, true));
+
         })
         .catch(error => {
             console.log('Error: ', error);
