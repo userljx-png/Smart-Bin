@@ -585,29 +585,57 @@
                 }
                 readValueWithRetry();
 
-                characteristic.startNotifications()
+                return characteristic.startNotifications()
                     .then(() => {
                         characteristic.addEventListener('characteristicvaluechanged', listener);
                         console.log("Notifications started for", element.id);
+                        return listener;
                     })
-                    .catch(err => console.log("Notification error:", err));
+                    .catch(err => {
+                        console.log("Notification error:", err);
+                        return null;
+                    });
+            }
 
-                return listener;
+            // Safe mobile connect: stagger notifications to avoid mobile BLE overload
+            function setupAllNotifications() {
+                const allChars = [
+                    {char: itemnameCharacteristicFound, el: itemnameValue, type: 'string'},
+                    {char: itemcatCharacteristicFound, el: itemcatValue, type: 'string'},
+                    {char: quantityCharacteristicFound, el: quantityValue, type: 'string'},
+                    {char: weightCharacteristicFound, el: weightValue, type: 'uint8'},
+                    {char: maxweightCharacteristicFound, el: maxweightValue, type: 'uint8'},
+                    {char: levelCharacteristicFound, el: levelValue, type: 'uint8'},
+                    {char: binposCharacteristicFound, el: binposValue, type: 'string'},
+                    {char: sensorlocCharacteristicFound, el: sensorlocValue, type: 'string'},
+                    {char: sensortypeCharacteristicFound, el: sensortypeValue, type: 'uint8'}
+                ];
+
+                allChars.forEach((c, index) => {
+                    setTimeout(() => {
+                        const listenerPromise = setupNotification(c.char, c.el, c.type);
+                        listenerPromise.then(listener => {
+                            // save listeners globally for disconnect
+                            switch(c.el.id) {
+                                case 'itemname': itemnameListener = listener; break;
+                                case 'itemcat': itemcatListener = listener; break;
+                                case 'quantity': quantityListener = listener; break;
+                                case 'weight': weightListener = listener; break;
+                                case 'maxweight': maxweightListener = listener; break;
+                                case 'level': levelListener = listener; break;
+                                case 'binpos': binposListener = listener; break;
+                                case 'sensorloc': sensorlocListener = listener; break;
+                                case 'sensortype': sensortypeListener = listener; break;
+                            }
+                        });
+                    }, index * 200); // stagger 200ms per characteristic
+                });
             }
 
 
 
             // Setup all characteristics
-            itemnameListener = setupNotification(itemnameCharacteristicFound, itemnameValue, 'string');
-            itemcatListener = setupNotification(itemcatCharacteristicFound, itemcatValue, 'string');
-            quantityListener = setupNotification(quantityCharacteristicFound, quantityValue, 'string');
-            weightListener = setupNotification(weightCharacteristicFound, weightValue, 'uint8');
-
-            maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue, 'uint8');
-            levelListener = setupNotification(levelCharacteristicFound, levelValue, 'uint8');
-            binposListener = setupNotification(binposCharacteristicFound, binposValue, 'string');
-            sensorlocListener = setupNotification(sensorlocCharacteristicFound, sensorlocValue, 'string');
-            sensortypeListener = setupNotification(sensortypeCharacteristicFound, sensortypeValue, 'uint8');
+            setupAllNotifications();
 
             // Enable input fields and save buttons
             const inputs = [
