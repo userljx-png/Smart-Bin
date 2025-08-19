@@ -531,11 +531,25 @@
             sensorlocCharacteristicFound, sensortypeCharacteristicFound] = characteristics;
 
             // Helper function to decode data
-            function decodeValue(data, type='string') {
-                if (type === 'uint8') return data.getUint8(0);
-                if (type === 'uint16') return data.getUint16(0, true);
-                if (type === 'float32') return data.getFloat32(0, true);
-                return new TextDecoder().decode(data);
+            function decodeValue(data, type) {
+              if (type === 'uint8') {
+                let v = data.getUint8(0);
+                console.log("Decoded uint8:", v);
+                return v;
+              }
+              if (type === 'uint16') {
+                let v = data.getUint16(0, true);
+                console.log("Decoded uint16:", v);
+                return v;
+              }
+              if (type === 'float32') {
+                let v = data.getFloat32(0, true);
+                console.log("Decoded float32:", v);
+                return v;
+              }
+              let txt = new TextDecoder().decode(data);
+              console.log("Decoded string:", txt);
+              return txt;
             }
 
             // Setup notifications for each characteristic
@@ -573,7 +587,7 @@
             itemnameListener = setupNotification(itemnameCharacteristicFound, itemnameValue, 'string');
             itemcatListener = setupNotification(itemcatCharacteristicFound, itemcatValue, 'string');
             quantityListener = setupNotification(quantityCharacteristicFound, quantityValue, 'string');
-            weightListener = setupNotification(weightCharacteristicFound, weightValue, 'string');
+            weightListener = setupNotification(weightCharacteristicFound, weightValue, 'uint8');
             maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue, 'uint8');
             levelListener = setupNotification(levelCharacteristicFound, levelValue, 'uint8');
             binposListener = setupNotification(binposCharacteristicFound, binposValue, 'string');
