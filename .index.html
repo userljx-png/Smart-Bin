@@ -571,6 +571,8 @@
                             const decoded = decodeValue(value, type);
                             if (element.tagName === "INPUT") element.value = decoded;
                             else element.innerHTML = decoded;
+
+                            timestampContainer.innerHTML = getDateTime();
                         })
                         .catch(err => {
                             if (retries > 0) {
