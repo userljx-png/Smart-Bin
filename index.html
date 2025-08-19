@@ -554,34 +554,33 @@
 
             // Setup notifications for each characteristic
             function setupNotification(characteristic, element, type='string') {
-              const listener = event => {
-                  const value = decodeValue(event.target.value, type);
+                const listener = event => {
+                    const value = decodeValue(event.target.value, type);
+                    if (element.tagName === "INPUT") element.value = value;
+                    else element.innerHTML = value;
+                    timestampContainer.innerHTML = getDateTime();
+                };
 
-                  if (element.tagName === "INPUT") {
-                      element.value = value;   
-                  } else {
-                      element.innerHTML = value; 
-                  }
+                // Read initial value
+                characteristic.readValue()
+                    .then(value => {
+                        const decoded = decodeValue(value, type);
+                        if (element.tagName === "INPUT") element.value = decoded;
+                        else element.innerHTML = decoded;
+                    })
+                    .catch(err => console.log("Read error (might be notify-only):", err));
 
-                  timestampContainer.innerHTML = getDateTime();
-              };
+                // Start notifications for live updates
+                characteristic.startNotifications()
+                    .then(() => {
+                        characteristic.addEventListener('characteristicvaluechanged', listener);
+                        console.log("Notifications started for", element.id);
+                    })
+                    .catch(err => console.log("Notification error:", err));
 
-              characteristic.addEventListener('characteristicvaluechanged', listener);
+                return listener;
+            }
 
-              characteristic.readValue().then(value => {
-                  const decoded = decodeValue(value, type);
-
-                  if (element.tagName === "INPUT") {
-                      element.value = decoded;
-                  } else {
-                      element.innerHTML = decoded;
-                  }
-
-                  setTimeout(() => characteristic.startNotifications(), 100);
-              });
-
-              return listener;
-          }
 
             // Setup all characteristics
             itemnameListener = setupNotification(itemnameCharacteristicFound, itemnameValue, 'string');
