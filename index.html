@@ -485,6 +485,10 @@
         return true
     }
 
+    function isMobile() {
+      return /Mobi|Android/i.test(navigator.userAgent);
+    }
+
     // Connect to BLE Device and Enable Notifications
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
@@ -553,7 +557,7 @@
             }
 
             // Setup notifications for each characteristic
-            function setupNotification(characteristic, element, type='string') {
+            function setupNotification(characteristic, element, type='string', notifyOnly=false) {
 
                 const listener = event => {
                     const value = decodeValue(event.target.value, type);
@@ -562,26 +566,26 @@
                     timestampContainer.innerHTML = getDateTime();
                 };
 
-                // Helper: readValue with retries (for mobile notify-only characteristics)
-                function readValueWithRetry(retries = 3) {
-                    characteristic.readValue()
-                        .then(value => {
-                            const decoded = decodeValue(value, type);
-                            if (element.tagName === "INPUT") element.value = decoded;
-                            else element.innerHTML = decoded;
-                        })
-                        .catch(err => {
-                            if (retries > 0) {
-                                console.log("Retry read for", element.id, "Retries left:", retries);
-                                setTimeout(() => readValueWithRetry(retries - 1), 200);
-                            } else {
-                                console.log("Read failed (might be notify-only) for", element.id, err);
-                            }
-                        });
+                // Only try reading initial value if NOT notify-only
+                if (!notifyOnly) {
+                    function readValueWithRetry(retries = 3) {
+                        characteristic.readValue()
+                            .then(value => {
+                                const decoded = decodeValue(value, type);
+                                if (element.tagName === "INPUT") element.value = decoded;
+                                else element.innerHTML = decoded;
+                            })
+                            .catch(err => {
+                                if (retries > 0) {
+                                    console.log("Retry read for", element.id, "Retries left:", retries);
+                                    setTimeout(() => readValueWithRetry(retries - 1), 200);
+                                } else {
+                                    console.log("Read failed (might be notify-only) for", element.id, err);
+                                }
+                            });
+                    }
+                    readValueWithRetry();
                 }
-
-                // Try reading initial value
-                readValueWithRetry();
 
                 // Start notifications for live updates
                 characteristic.startNotifications()
@@ -597,14 +601,17 @@
 
 
             // Setup all characteristics
+            const notifyOnlyFlag = isMobile();
             itemnameListener = setupNotification(itemnameCharacteristicFound, itemnameValue, 'string');
             itemcatListener = setupNotification(itemcatCharacteristicFound, itemcatValue, 'string');
             quantityListener = setupNotification(quantityCharacteristicFound, quantityValue, 'string');
             weightListener = setupNotification(weightCharacteristicFound, weightValue, 'uint8');
-            maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue, 'uint8');
-            levelListener = setupNotification(levelCharacteristicFound, levelValue, 'uint8');
-            binposListener = setupNotification(binposCharacteristicFound, binposValue, 'string');
-            sensorlocListener = setupNotification(sensorlocCharacteristicFound, sensorlocValue, 'string');
+
+            maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue, 'uint8', notifyOnlyFlag);
+            levelListener = setupNotification(levelCharacteristicFound, levelValue, 'uint8', notifyOnlyFlag);
+            binposListener = setupNotification(binposCharacteristicFound, binposValue, 'string', notifyOnlyFlag);
+            sensorlocListener = setupNotification(sensorlocCharacteristicFound, sensorlocValue, 'string', notifyOnlyFlag);
+            
             sensortypeListener = setupNotification(sensortypeCharacteristicFound, sensortypeValue, 'uint8');
 
             // Enable input fields and save buttons
