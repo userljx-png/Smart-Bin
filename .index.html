@@ -493,9 +493,53 @@
       return /Mobi|Android/i.test(navigator.userAgent);
     }
 
+    function resetListeners() {
+        if(itemnameCharacteristicFound && itemnameListener){
+            itemnameCharacteristicFound.removeEventListener('characteristicvaluechanged', itemnameListener);
+            itemnameCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(itemcatCharacteristicFound && itemcatListener){
+            itemcatCharacteristicFound.removeEventListener('characteristicvaluechanged', itemcatListener);
+            itemcatCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(quantityCharacteristicFound && quantityListener){
+            quantityCharacteristicFound.removeEventListener('characteristicvaluechanged', quantityListener);
+            quantityCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(weightCharacteristicFound && weightListener){
+            weightCharacteristicFound.removeEventListener('characteristicvaluechanged', weightListener);
+            weightCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(maxweightCharacteristicFound && maxweightListener){
+            maxweightCharacteristicFound.removeEventListener('characteristicvaluechanged', maxweightListener);
+            maxweightCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(levelCharacteristicFound && levelListener){
+            levelCharacteristicFound.removeEventListener('characteristicvaluechanged', levelListener);
+            levelCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(binposCharacteristicFound && binposListener){
+            binposCharacteristicFound.removeEventListener('characteristicvaluechanged', binposListener);
+            binposCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(sensorlocCharacteristicFound && sensorlocListener){
+            sensorlocCharacteristicFound.removeEventListener('characteristicvaluechanged', sensorlocListener);
+            sensorlocCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(sensortypeCharacteristicFound && sensortypeListener){
+            sensortypeCharacteristicFound.removeEventListener('characteristicvaluechanged', sensortypeListener);
+            sensortypeCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+
+        // Clear all listener references
+        itemnameListener = itemcatListener = quantityListener = weightListener =
+        maxweightListener = levelListener = binposListener = sensorlocListener = sensortypeListener = null;
+    }
+
     // Connect to BLE Device and Enable Notifications
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
+        resetListeners();
         navigator.bluetooth.requestDevice({
             filters: [{name: deviceName}],
             optionalServices: [bleService]
@@ -568,7 +612,6 @@
                         if (element.tagName === "INPUT") element.value = value;
                         else element.innerHTML = value;
                         timestampContainer.innerHTML = getDateTime();
-                        return characteristic.startNotifications();
                     };
 
                     characteristic.readValue()
@@ -623,7 +666,7 @@
                     } catch(err) {
                         console.log("Failed to setup", c.el.id, err);
                     }
-                    await new Promise(res => setTimeout(res, 300)); // Increase delay for mobile stability
+                    await new Promise(res => setTimeout(res, 600)); // Increase delay for mobile stability
                 }
 
                 timestampContainer.innerHTML = getDateTime();
