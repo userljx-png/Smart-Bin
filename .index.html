@@ -458,7 +458,11 @@
     // Connect Button (search for BLE Devices only if BLE is available)
     connectButton.addEventListener('click', (event) => {
         if (isWebBluetoothEnabled()){
-            connectToDevice();
+            if(isMobile()){
+                setTimeout(connectToDevice, 200); // 200ms delay for mobile
+            } else {
+                connectToDevice();
+            }
         }
     });
 
@@ -618,8 +622,9 @@
                 }
 
                 // Enable inputs/buttons after first read
-                [itemnameValue, itemcatValue, quantityValue, weightValue, maxweightValue, levelValue, binposValue, sensorlocValue]
-                    .forEach(input => input.disabled = false);
+                const inputs = [itemnameValue, itemcatValue, quantityValue, weightValue, maxweightValue, levelValue, binposValue, sensorlocValue];
+                inputs.forEach(input => input.disabled = false);
+                
                 ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton']
                     .forEach(id => setButtonEnabled(id, true));
             }
@@ -754,6 +759,15 @@
     }
 
     clearValues();
+    itemnameListener = null;
+    itemcatListener = null;
+    quantityListener = null;
+    weightListener = null;
+    maxweightListener = null;
+    levelListener = null;
+    binposListener = null;
+    sensorlocListener = null;
+    sensortypeListener = null;
 
 </script>
 
