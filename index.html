@@ -554,6 +554,7 @@
 
             // Setup notifications for each characteristic
             function setupNotification(characteristic, element, type='string') {
+
                 const listener = event => {
                     const value = decodeValue(event.target.value, type);
                     if (element.tagName === "INPUT") element.value = value;
@@ -561,14 +562,26 @@
                     timestampContainer.innerHTML = getDateTime();
                 };
 
-                // Read initial value
-                characteristic.readValue()
-                    .then(value => {
-                        const decoded = decodeValue(value, type);
-                        if (element.tagName === "INPUT") element.value = decoded;
-                        else element.innerHTML = decoded;
-                    })
-                    .catch(err => console.log("Read error (might be notify-only):", err));
+                // Helper: readValue with retries (for mobile notify-only characteristics)
+                function readValueWithRetry(retries = 3) {
+                    characteristic.readValue()
+                        .then(value => {
+                            const decoded = decodeValue(value, type);
+                            if (element.tagName === "INPUT") element.value = decoded;
+                            else element.innerHTML = decoded;
+                        })
+                        .catch(err => {
+                            if (retries > 0) {
+                                console.log("Retry read for", element.id, "Retries left:", retries);
+                                setTimeout(() => readValueWithRetry(retries - 1), 200);
+                            } else {
+                                console.log("Read failed (might be notify-only) for", element.id, err);
+                            }
+                        });
+                }
+
+                // Try reading initial value
+                readValueWithRetry();
 
                 // Start notifications for live updates
                 characteristic.startNotifications()
@@ -580,6 +593,7 @@
 
                 return listener;
             }
+
 
 
             // Setup all characteristics
