@@ -318,7 +318,7 @@
     //Update Quantity
     function updateQuantity() {
         if (quantityCharacteristicFound && bleServer && bleServer.connected) {
-            const value = document.getElementById("itemcat").value;
+            const value = document.getElementById("quantity").value;
             const data = new TextEncoder().encode(value);
             quantityCharacteristicFound.writeValue(data)
             .then(() => {
@@ -607,16 +607,22 @@
             quantityListener = setupNotification(quantityCharacteristicFound, quantityValue, 'string');
             weightListener = setupNotification(weightCharacteristicFound, weightValue, 'uint8');
 
-            maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue, 'uint8', notifyOnlyFlag);
-            levelListener = setupNotification(levelCharacteristicFound, levelValue, 'uint8', notifyOnlyFlag);
-            binposListener = setupNotification(binposCharacteristicFound, binposValue, 'string', notifyOnlyFlag);
-            sensorlocListener = setupNotification(sensorlocCharacteristicFound, sensorlocValue, 'string', notifyOnlyFlag);
-            
+            maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue, 'uint8', false);
+            levelListener = setupNotification(levelCharacteristicFound, levelValue, 'uint8', false);
+            binposListener = setupNotification(binposCharacteristicFound, binposValue, 'string', false);
+            sensorlocListener = setupNotification(sensorlocCharacteristicFound, sensorlocValue, 'string', false);
+
             sensortypeListener = setupNotification(sensortypeCharacteristicFound, sensortypeValue, 'uint8');
 
             // Enable input fields and save buttons
-            const inputs = [itemnameValue, itemcatValue, quantityValue, weightValue, maxweightValue, levelValue, binposValue, sensorlocValue];
-            inputs.forEach(input => input.disabled = false);
+            const inputs = [
+                itemnameValue, itemcatValue, quantityValue, weightValue, 
+                maxweightValue, levelValue, binposValue, sensorlocValue
+            ];
+
+            inputs.forEach(input => {
+              input.disabled = false;
+            });
             ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton'].forEach(id => setButtonEnabled(id, true));
         })
         .catch(error => {
