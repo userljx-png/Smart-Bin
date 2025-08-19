@@ -1,0 +1,774 @@
+<!--
+  Rui Santos
+  Complete project details at https://RandomNerdTutorials.com/esp32-web-bluetooth/
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files.
+  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Bin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="">
+
+    <!-- Import Baloo 2 from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <style>
+    
+    body {
+      font-family: 'Baloo 2', cursive;
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    /* Smart Bin Web App */
+    h1 {
+      color: #1a73e8;
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    /* BLE State */
+    #bleStateContainer {
+      font-size: 20px;
+      font-weight: bold;
+      color: #d13a30;
+      margin-bottom: 10px;
+    }
+
+    /* Connect to BLE Device Button */
+    .btn-green {
+      background-color: #4CAF50; 
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn-green:hover {
+      background-color: #45a049;
+    }
+
+    /* Disconnect BLE Device Button */
+    .btn-red {
+      background-color: #f44336; 
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn-red:hover {
+      background-color: #d73833;
+    }
+    .btn-green:active, 
+    .btn-red:active {
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Device Name */
+    h2 {
+      border-top: 2px solid #000;      /* line above */
+      border-bottom: 2px solid #000;   /* line below */
+      padding: 6px 0;                  /* vertical padding */
+      margin: 10px auto 30px auto;      /* margins, with more space below */
+      width: 150px;
+      text-align: center;
+      min-height: 36px;
+      font-style: italic;
+    }
+
+    /* Table for data */
+    table td:first-child {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    table td:nth-child(2) {
+      white-space: nowrap;
+    }
+    table input, 
+    table button {
+      vertical-align: middle;
+    }
+    
+    /* Input field */
+    table input{
+      font-family:'Franklin Gothic', 'Arial', Arial, sans-serif;
+      font-size: 16px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      padding: 4px 6px;  
+    }
+
+    /* Save buttons */
+    table button {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      background-color: #f0f0f0;
+      cursor: pointer;
+      transition: background-color 0.3s, 
+    }
+    table button:disabled {
+      cursor: default;
+    }
+    table button:not(:disabled):hover {
+      background-color: #e0e0e0; 
+    }
+    table button:not(:disabled):active {
+      transform: translate(1px, 1px);
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Save all button */
+    .btn-saveall {
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      border-radius: 24px;
+      border: 1px solid #4a90e2;
+      background-color: #4a90e2; 
+      color: white;
+      padding: 8px 16px;
+      margin-top: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn-saveall:hover {
+      background-color: #357abd; 
+    }
+    .btn-saveall:active {
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    .btn-saveall:disabled {
+      background-color: #a0c4ff;
+      border-color: #a0c4ff;
+      cursor: default;
+      box-shadow: none;
+    }
+  </style>
+<h1>Smart Bin Web App</h1>
+<div id="bleStateContainer">BLE State: <span id="bleState">Disconnected</span></div>
+<button id="connectBleButton" class="btn-green">Connect to BLE Device</button>
+<button id="disconnectBleButton" class="btn-red">Disconnect BLE Device</button>
+
+<h2 id="devicename"></h2>
+
+<table style="border-collapse: collapse; width: 100%; max-width: 400px; margin: 0 auto;">
+  <!-- Item Name -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Item Name:</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="itemname" disabled />
+      <button id="saveItemNameButton" onclick="updateItemName()" disabled>Save</button>
+    </td>
+  </tr>
+
+  <tr style="height: 12px;"></tr>
+  <!-- Item Category -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Item Category:</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="itemcat" disabled />
+      <button id="saveItemCatButton" onclick="updateItemCat()" disabled>Save</button>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+  <!-- Quantity -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Quantity (Read Only):</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="quantity" disabled />
+      <button id="saveQuantityButton" onclick="updateQuantity()" disabled>Save</button>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+  <!-- Weight -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Weight (Read Only):</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="weight" disabled />
+      <button id="saveWeightButton" onclick="updateWeight()" disabled>Save</button>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+  <!-- Max Weight -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Max Weight:</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="maxweight" disabled />
+      <button id="saveMaxWeightButton" onclick="updateMaxWeight()" disabled>Save</button>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+
+<!-- Level -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Level (Read Only):</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="level" disabled />
+      <button id="saveLevelButton" onclick="updateLevel()" disabled>Save</button>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+  <!-- Bin Position -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Bin Position:</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="binpos" disabled />
+      <button id="saveBinPosButton" onclick="updateBinPos()" disabled>Save</button>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+  <!-- Sensor Location -->
+  <tr>
+    <td style="padding: 4px 20px 4px 0; text-align: right; font-weight: bold; white-space: nowrap;">Sensor Location:</td>
+    <td style="padding: 4px 0 4px 20px; text-align: left;">
+      <input type="text" id="sensorloc" disabled />
+      <button id="saveSensorLocButton" onclick="updateSensorLoc()" disabled>Save</button>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+
+  <tr>
+    <td style="padding: 4px 0; width: 150px; text-align: left; font-weight: bold;">Sensor Type:</td>
+    <td style="padding: 4px 12px; text-align: left;"><span id="sensortype"></span></td>
+  </tr>
+
+  <tr style="height: 12px;"></tr> 
+
+  <tr>
+    <td style="padding: 4px 0; width: 150px; text-align: left; font-weight: bold;">Last Reading:</td>
+    <td style="padding: 4px 12px; text-align: left;"><span id="timestamp"></span></td>
+  </tr>
+</table>
+<button id="saveAllButton" class="btn-saveall" disabled>Save All</button>
+</body>
+<script>
+    // DOM Elements
+    const connectButton = document.getElementById('connectBleButton');
+    const disconnectButton = document.getElementById('disconnectBleButton');
+    const onButton = document.getElementById('onButton');
+    const offButton = document.getElementById('offButton');
+    const bleStateContainer = document.getElementById('bleStateContainer');
+    const timestampContainer = document.getElementById('timestamp');
+
+    // Characteristics Elements
+    const itemnameValue = document.getElementById('itemname');
+    const itemcatValue = document.getElementById('itemcat');
+    const quantityValue = document.getElementById('quantity')
+    const weightValue = document.getElementById('weight');
+    const maxweightValue = document.getElementById('maxweight');
+    const levelValue = document.getElementById('level');
+    const binposValue = document.getElementById('binpos');
+    const sensorlocValue = document.getElementById('sensorloc')
+    const sensortypeValue = document.getElementById('sensortype');
+
+    //Update Item Name
+    function updateItemName() {
+        if (itemnameCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("itemname").value;
+            const data = new TextEncoder().encode(value);
+            itemnameCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Item Name updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Item Name:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+
+    //Update Item Category
+    function updateItemCat() {
+        if (itemcatCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("itemcat").value;
+            const data = new TextEncoder().encode(value);
+            itemcatCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Item Category updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Item Category:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+    
+    //Update Quantity
+    function updateQuantity() {
+        if (quantityCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("quantity").value;
+            const data = new TextEncoder().encode(value);
+            quantityCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Quantity updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Quantity:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+
+    //Update Weight
+    function updateWeight() {
+        if (weightCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("weight").value;
+            const data = new TextEncoder().encode(value);
+            weightCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Weight updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Weight:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+
+    //Update Max Weight
+    function updateMaxWeight() {
+        if (maxweightCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("maxweight").value;
+            const data = new TextEncoder().encode(value);
+            maxweightCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Max Weight updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Max Weight:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+
+    //Update Level
+    function updateLevel() {
+        if (levelCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("level").value;
+            const data = new TextEncoder().encode(value);
+            levelCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Level updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Level:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+
+    //Update Bin Position
+    function updateBinPos() {
+        if (binposCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("binpos").value;
+            const data = new TextEncoder().encode(value);
+            binposCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Bin Position updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Bin Position:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+
+    //Update Sensor Location
+    function updateSensorLoc() {
+        if (sensorlocCharacteristicFound && bleServer && bleServer.connected) {
+            const value = document.getElementById("sensorloc").value;
+            const data = new TextEncoder().encode(value);
+            sensorlocCharacteristicFound.writeValue(data)
+            .then(() => {
+                console.log("Sensor Location updated:", value);
+            })
+            .catch(error => {
+                console.error("Failed to write Sensor Location:", error);
+            });
+        } else {
+            alert("BLE device not connected.");
+        }
+    }
+
+    //Define BLE Device Specs
+    var deviceName ='WeightMonitor';
+    var bleService = '19b10010-e8f2-537e-4f6c-d1047652abcd';
+
+    //Characteristics
+    var itemnameCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc3'; 
+    var itemcatCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc8';
+    var quantityCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abca';
+    var weightCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc1';
+    var maxweightCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc5';
+    var levelCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc2';
+    var binposCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc4';
+    var sensorlocCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc9';
+    var sensortypeCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc7';
+    
+    //Global Variables to Handle Bluetooth
+    var bleServer;
+    var bleServiceFound;
+    var itemnameCharacteristicFound;
+    var itemcatCharacteristicFound;
+    var quantityCharacteristicFound;
+    var weightCharacteristicFound;
+    var maxweightCharacteristicFound;
+    var levelCharacteristicFound;
+    var binposCharacteristicFound;
+    var sensorlocCharacteristicFound;
+    var sensortypeCharacteristicFound;
+
+    var itemnameListener;
+    var itemcatListener;
+    var quantityListener;
+    var weightListener;
+    var maxweightListener;
+    var levelListener;
+    var binposListener;
+    var sensorlocListener;
+    var sensortypeListener;
+
+    // Connect Button (search for BLE Devices only if BLE is available)
+    connectButton.addEventListener('click', (event) => {
+        if (isWebBluetoothEnabled()){
+            connectToDevice();
+        }
+    });
+
+    // Disconnect Button
+    disconnectButton.addEventListener('click', disconnectDevice);
+
+    //Save Button Function
+    function setButtonEnabled(buttonId, enabled) {
+      const button = document.getElementById(buttonId);
+      if (button) {
+          button.disabled = !enabled;
+      }
+    }
+
+    // Check if BLE is available in your Browser
+    function isWebBluetoothEnabled() {
+        if (!navigator.bluetooth) {
+            alert("Web Bluetooth API is not available in this browser! Use Chrome on Android or Safari on iOS.");
+            console.log("Web Bluetooth API is not available in this browser!");
+            bleStateContainer.innerHTML = "Web Bluetooth API is not available in this browser!";
+            return false
+        }
+        console.log('Web Bluetooth API supported in this browser.');
+        return true
+    }
+
+    function isMobile() {
+      return /Mobi|Android/i.test(navigator.userAgent);
+    }
+
+    // Connect to BLE Device and Enable Notifications
+    function connectToDevice(){
+        console.log('Initializing Bluetooth...');
+        navigator.bluetooth.requestDevice({
+            filters: [{name: deviceName}],
+            optionalServices: [bleService]
+        })
+        .then(device => {
+            console.log('Device Selected:', device.name);
+            bleStateContainer.innerHTML = 'BLE State: Connected to "' + device.name + '"';
+            bleStateContainer.style.color = "#24af37";
+            document.getElementById("devicename").textContent = device.name
+            device.addEventListener('gattservicedisconnected', onDisconnected);
+            return device.gatt.connect();
+        })
+        .then(gattServer =>{
+            bleServer = gattServer;
+            console.log("Connected to GATT Server");
+            return bleServer.getPrimaryService(bleService);
+        })
+        .then(service => {
+            bleServiceFound = service;
+            console.log("Service discovered:", service.uuid);
+
+            return Promise.all([
+                service.getCharacteristic(itemnameCharacteristic),
+                service.getCharacteristic(itemcatCharacteristic),
+                service.getCharacteristic(quantityCharacteristic),
+                service.getCharacteristic(weightCharacteristic),
+                service.getCharacteristic(maxweightCharacteristic),
+                service.getCharacteristic(levelCharacteristic),
+                service.getCharacteristic(binposCharacteristic),
+                service.getCharacteristic(sensorlocCharacteristic),
+                service.getCharacteristic(sensortypeCharacteristic)
+                
+            ]);
+            
+        })
+        
+        .then(characteristics => {
+            // Assign characteristics
+            [itemnameCharacteristicFound, itemcatCharacteristicFound, quantityCharacteristicFound, weightCharacteristicFound,
+            maxweightCharacteristicFound, levelCharacteristicFound, binposCharacteristicFound,
+            sensorlocCharacteristicFound, sensortypeCharacteristicFound] = characteristics;
+
+            // Helper function to decode data
+            function decodeValue(data, type) {
+              if (type === 'uint8') {
+                let v = data.getUint8(0);
+                console.log("Decoded uint8:", v);
+                return v;
+              }
+              if (type === 'uint16') {
+                let v = data.getUint16(0, true);
+                console.log("Decoded uint16:", v);
+                return v;
+              }
+              if (type === 'float32') {
+                let v = data.getFloat32(0, true);
+                console.log("Decoded float32:", v);
+                return v;
+              }
+              let txt = new TextDecoder().decode(data);
+              console.log("Decoded string:", txt);
+              return txt;
+            }
+
+            // Setup notifications for each characteristic
+            function setupNotification(characteristic, element, type='string') {
+                return new Promise((resolve, reject) => {
+                    const listener = event => {
+                        const value = decodeValue(event.target.value, type);
+                        if (element.tagName === "INPUT") element.value = value;
+                        else element.innerHTML = value;
+                        timestampContainer.innerHTML = getDateTime();
+                    };
+
+                    characteristic.readValue()
+                    .then(value => {
+                        const decoded = decodeValue(value, type);
+                        if (element.tagName === "INPUT") element.value = decoded;
+                        else element.innerHTML = decoded;
+                        // Start notifications after first read
+                        return characteristic.startNotifications();
+                    })
+                    .then(() => {
+                        characteristic.addEventListener('characteristicvaluechanged', listener);
+                        console.log("Notifications started for", element.id);
+                        resolve(listener);  // Resolve after first read + notification started
+                    })
+                    .catch(err => {
+                        console.log("Notification error:", err);
+                        resolve(null);
+                    });
+                });
+            }
+
+            // Safe mobile connect: stagger notifications to avoid mobile BLE overload
+            function setupAllNotifications() {
+                const allChars = [
+                    {char: itemnameCharacteristicFound, el: itemnameValue, type: 'string'},
+                    {char: itemcatCharacteristicFound, el: itemcatValue, type: 'string'},
+                    {char: quantityCharacteristicFound, el: quantityValue, type: 'string'},
+                    {char: weightCharacteristicFound, el: weightValue, type: 'uint8'},
+                    {char: maxweightCharacteristicFound, el: maxweightValue, type: 'uint8'},
+                    {char: levelCharacteristicFound, el: levelValue, type: 'uint8'},
+                    {char: binposCharacteristicFound, el: binposValue, type: 'string'},
+                    {char: sensorlocCharacteristicFound, el: sensorlocValue, type: 'string'},
+                    {char: sensortypeCharacteristicFound, el: sensortypeValue, type: 'uint8'}
+                ];
+
+                const promises = allChars.map((c, index) => {
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            setupNotification(c.char, c.el, c.type).then(listener => {
+                                switch(c.el.id) {
+                                    case 'itemname': itemnameListener = listener; break;
+                                    case 'itemcat': itemcatListener = listener; break;
+                                    case 'quantity': quantityListener = listener; break;
+                                    case 'weight': weightListener = listener; break;
+                                    case 'maxweight': maxweightListener = listener; break;
+                                    case 'level': levelListener = listener; break;
+                                    case 'binpos': binposListener = listener; break;
+                                    case 'sensorloc': sensorlocListener = listener; break;
+                                    case 'sensortype': sensortypeListener = listener; break;
+                                }
+                                resolve();
+                            });
+                        }, index * 200);
+                    });
+                });
+
+                return Promise.all(promises);
+            }
+
+            setupAllNotifications().then(() => {
+                // Enable input fields and save buttons only after first values loaded
+                const inputs = [
+                    itemnameValue, itemcatValue, quantityValue, weightValue, 
+                    maxweightValue, levelValue, binposValue, sensorlocValue
+                ];
+                inputs.forEach(input => input.disabled = false);
+                ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton'].forEach(id => setButtonEnabled(id, true));
+            });
+
+        })
+        .catch(error => {
+            console.log('Error: ', error);
+        });
+
+    
+    }
+
+    function clearValues() {
+      //Input Elements
+      const itemnameInput = document.getElementById("itemname");
+      const itemcatInput = document.getElementById("itemcat");
+      const quantityInput = document.getElementById("quantity");
+      const weightInput = document.getElementById("weight");
+      const maxweightInput = document.getElementById("maxweight");
+      const levelInput = document.getElementById("level");
+      const binposInput = document.getElementById("binpos");
+      const sensorlocInput = document.getElementById("sensorloc");
+
+      //Empty input field
+      itemnameInput.value = "";
+      itemcatInput.value = "";
+      quantityInput.value = "";
+      weightInput.value = "";
+      maxweightInput.value = "";
+      levelInput.value = "";
+      binposInput.value = "";
+      sensorlocInput.value = "";
+
+      //Disable input field
+      itemnameInput.disabled = true;
+      itemcatInput.disabled = true;
+      quantityInput.disabled = true;
+      weightInput.disabled = true;
+      maxweightInput.disabled = true;
+      levelInput.disabled = true;
+      binposInput.disabled = true;
+      sensorlocInput.disabled = true;
+
+      //Disable save buttons
+      setButtonEnabled("saveItemNameButton", false);
+      setButtonEnabled("saveItemCatButton", false);
+      setButtonEnabled("saveQuantityButton", false);
+      setButtonEnabled("saveWeightButton", false);
+      setButtonEnabled("saveMaxWeightButton", false);
+      setButtonEnabled("saveLevelButton", false);
+      setButtonEnabled("saveBinPosButton", false);
+      setButtonEnabled("saveSensorLocButton", false);
+
+      //To be deleted...
+      document.getElementById("sensortype").innerHTML = "";
+      document.getElementById("timestamp").innerHTML = "";
+    }
+
+    function onDisconnected(event) {
+        console.log('Device Disconnected:', event.target.device.name);
+        bleStateContainer.innerHTML = "BLE State: Disconnected";
+        bleStateContainer.style.color = "#d13a30";
+
+        clearValues();
+    }
+
+    function handleCharacteristicChange(event){
+        const newValueReceived = new TextDecoder().decode(event.target.value);
+        console.log("Characteristic value changed: ", newValueReceived);
+        itemnameValue.innerHTML = newValueReceived;
+        timestampContainer.innerHTML = getDateTime();
+    }
+
+    function disconnectDevice() {
+        console.log("Disconnect Device.");
+        if (bleServer && bleServer.connected) {
+            if (itemnameCharacteristicFound && itemcatCharacteristicFound && quantityCharacteristicFound && weightCharacteristicFound && maxweightCharacteristicFound && levelCharacteristicFound && binposCharacteristicFound && sensorlocCharacteristicFound && sensortypeCharacteristicFound) {
+                Promise.all([
+                    itemnameCharacteristicFound.stopNotifications().then(() => itemnameCharacteristicFound.removeEventListener('characteristicvaluechanged', itemnameListener)),
+                    itemcatCharacteristicFound.stopNotifications().then(() => itemcatCharacteristicFound.removeEventListener('characteristicvaluechanged', itemcatListener)),
+                    quantityCharacteristicFound.stopNotifications().then(() => quantityCharacteristicFound.removeEventListener('characteristicvaluechanged', quantityListener)),
+                    weightCharacteristicFound.stopNotifications().then(() => weightCharacteristicFound.removeEventListener('characteristicvaluechanged', weightListener)),
+                    maxweightCharacteristicFound.stopNotifications().then(() => maxweightCharacteristicFound.removeEventListener('characteristicvaluechanged', maxweightListener)),
+                    levelCharacteristicFound.stopNotifications().then(() => levelCharacteristicFound.removeEventListener('characteristicvaluechanged', levelListener)),
+                    binposCharacteristicFound.stopNotifications().then(() => binposCharacteristicFound.removeEventListener('characteristicvaluechanged', binposListener)),
+                    sensorlocCharacteristicFound.stopNotifications().then(() => sensorlocCharacteristicFound.removeEventListener('characteristicvaluechanged', sensorlocListener)),
+                    sensortypeCharacteristicFound.stopNotifications().then(() => sensortypeCharacteristicFound.removeEventListener('characteristicvaluechanged', sensortypeListener))
+                ])
+                .then(() => {
+                    console.log("Notifications Stopped");
+                    return bleServer.disconnect();
+                })
+                .then(() => {
+                    console.error("Bluetooth is not connected.");
+                    window.alert("Bluetooth is not connected.");
+                    bleStateContainer.innerHTML = "BLE State: Disconnected";
+                    bleStateContainer.style.color = "#d13a30";
+
+                    const deviceNameElement = document.getElementById('devicename');
+                    if (deviceNameElement) {
+                        deviceNameElement.textContent = '';
+                    }
+                    clearValues();
+                })
+                .catch(error => {
+                    console.log("An error occurred:", error);
+                });
+            } else {
+                console.log("No characteristic found to disconnect.");
+            }
+        } else {
+            console.error("Bluetooth is not connected.");
+            window.alert("Bluetooth is not connected.");
+            bleStateContainer.innerHTML = "BLE State: Disconnected";
+            bleStateContainer.style.color = "#d13a30";
+
+            const deviceNameElement = document.getElementById('devicename');
+            if (deviceNameElement) {
+              deviceNameElement.textContent = '';
+            }
+            clearValues();
+        }
+    }
+
+    function getDateTime() {
+        var currentdate = new Date();
+        var day = ("00" + currentdate.getDate()).slice(-2); // Convert day to string and slice
+        var month = ("00" + (currentdate.getMonth() + 1)).slice(-2);
+        var year = currentdate.getFullYear();
+        var hours = ("00" + currentdate.getHours()).slice(-2);
+        var minutes = ("00" + currentdate.getMinutes()).slice(-2);
+        var seconds = ("00" + currentdate.getSeconds()).slice(-2);
+
+        var datetime = day + "/" + month + "/" + year + " at " + hours + ":" + minutes + ":" + seconds;
+        return datetime;
+    }
+
+    clearValues();
+
+</script>
+
+</html>
