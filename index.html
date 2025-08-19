@@ -531,42 +531,54 @@
             sensorlocCharacteristicFound, sensortypeCharacteristicFound] = characteristics;
 
             // Helper function to decode data
-            function decodeValue(data) {
-                if (data.byteLength === 1) return data.getUint8(0);
+            function decodeValue(data, type='string') {
+                if (type === 'uint8') return data.getUint8(0);
+                if (type === 'uint16') return data.getUint16(0, true);
+                if (type === 'float32') return data.getFloat32(0, true);
                 return new TextDecoder().decode(data);
             }
 
             // Setup notifications for each characteristic
-            function setupNotification(characteristic, element, isNumeric=false) {
-                const listener = event => {
-                    const value = decodeValue(event.target.value);
-                    if (isNumeric) element.innerHTML = value;
-                    else element.value = value;
-                    timestampContainer.innerHTML = getDateTime();
-                };
+            function setupNotification(characteristic, element, type='string') {
+              const listener = event => {
+                  const value = decodeValue(event.target.value, type);
 
-                characteristic.addEventListener('characteristicvaluechanged', listener);
+                  if (element.tagName === "INPUT") {
+                      element.value = value;   
+                  } else {
+                      element.innerHTML = value; 
+                  }
 
-                characteristic.readValue().then(value => {
-                    const decoded = decodeValue(value);
-                    if (isNumeric) element.innerHTML = decoded;
-                    else element.value = decoded;
-                    
-                    setTimeout(() => characteristic.startNotifications(), 100);
-                });
-                return listener;
-            }
+                  timestampContainer.innerHTML = getDateTime();
+              };
+
+              characteristic.addEventListener('characteristicvaluechanged', listener);
+
+              characteristic.readValue().then(value => {
+                  const decoded = decodeValue(value, type);
+
+                  if (element.tagName === "INPUT") {
+                      element.value = decoded;
+                  } else {
+                      element.innerHTML = decoded;
+                  }
+
+                  setTimeout(() => characteristic.startNotifications(), 100);
+              });
+
+              return listener;
+          }
 
             // Setup all characteristics
-            itemnameListener = setupNotification(itemnameCharacteristicFound, itemnameValue);
-            itemcatListener = setupNotification(itemcatCharacteristicFound, itemcatValue);
-            quantityListener = setupNotification(quantityCharacteristicFound, quantityValue);
-            weightListener = setupNotification(weightCharacteristicFound, weightValue);
-            maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue);
-            levelListener = setupNotification(levelCharacteristicFound, levelValue);
-            binposListener = setupNotification(binposCharacteristicFound, binposValue);
-            sensorlocListener = setupNotification(sensorlocCharacteristicFound, sensorlocValue);
-            sensortypeListener = setupNotification(sensortypeCharacteristicFound, sensortypeValue, true);
+            itemnameListener = setupNotification(itemnameCharacteristicFound, itemnameValue, 'string');
+            itemcatListener = setupNotification(itemcatCharacteristicFound, itemcatValue, 'string');
+            quantityListener = setupNotification(quantityCharacteristicFound, quantityValue, 'string');
+            weightListener = setupNotification(weightCharacteristicFound, weightValue, 'string');
+            maxweightListener = setupNotification(maxweightCharacteristicFound, maxweightValue, 'uint8');
+            levelListener = setupNotification(levelCharacteristicFound, levelValue, 'uint8');
+            binposListener = setupNotification(binposCharacteristicFound, binposValue, 'string');
+            sensorlocListener = setupNotification(sensorlocCharacteristicFound, sensorlocValue, 'string');
+            sensortypeListener = setupNotification(sensortypeCharacteristicFound, sensortypeValue, 'uint8');
 
             // Enable input fields and save buttons
             const inputs = [itemnameValue, itemcatValue, quantityValue, weightValue, maxweightValue, levelValue, binposValue, sensorlocValue];
