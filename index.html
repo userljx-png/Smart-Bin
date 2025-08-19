@@ -489,45 +489,6 @@
       return /Mobi|Android/i.test(navigator.userAgent);
     }
 
-    async function disconnectAllNotifications() {
-        if (!bleServer) return;
-        const chars = [
-            {char: itemnameCharacteristicFound, listener: itemnameListener},
-            {char: itemcatCharacteristicFound, listener: itemcatListener},
-            {char: quantityCharacteristicFound, listener: quantityListener},
-            {char: weightCharacteristicFound, listener: weightListener},
-            {char: maxweightCharacteristicFound, listener: maxweightListener},
-            {char: levelCharacteristicFound, listener: levelListener},
-            {char: binposCharacteristicFound, listener: binposListener},
-            {char: sensorlocCharacteristicFound, listener: sensorlocListener},
-            {char: sensortypeCharacteristicFound, listener: sensortypeListener},
-        ];
-
-        for (let c of chars) {
-            if (c.char && c.listener) {
-                try {
-                    await c.char.stopNotifications();
-                    c.char.removeEventListener('characteristicvaluechanged', c.listener);
-                } catch (err) {
-                    console.log("Error stopping notifications:", err);
-                }
-            }
-        }
-    }
-
-    // Call this at the very start of connectToDevice
-    disconnectAllNotifications();
-
-    itemnameListener = null;
-    itemcatListener = null;
-    quantityListener = null;
-    weightListener = null;
-    maxweightListener = null;
-    levelListener = null;
-    binposListener = null;
-    sensorlocListener = null;
-    sensortypeListener = null;
-    
     // Connect to BLE Device and Enable Notifications
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
@@ -626,49 +587,41 @@
             }
 
             // Safe mobile connect: stagger notifications to avoid mobile BLE overload
-            async function setupAllNotifications() {
+            function setupAllNotifications() {
                 const allChars = [
-                    {char: itemnameCharacteristicFound, el: itemnameValue, type: 'string', listenerVar: 'itemnameListener'},
-                    {char: itemcatCharacteristicFound, el: itemcatValue, type: 'string', listenerVar: 'itemcatListener'},
-                    {char: quantityCharacteristicFound, el: quantityValue, type: 'string', listenerVar: 'quantityListener'},
-                    {char: weightCharacteristicFound, el: weightValue, type: 'uint8', listenerVar: 'weightListener'},
-                    {char: maxweightCharacteristicFound, el: maxweightValue, type: 'uint8', listenerVar: 'maxweightListener'},
-                    {char: levelCharacteristicFound, el: levelValue, type: 'uint8', listenerVar: 'levelListener'},
-                    {char: binposCharacteristicFound, el: binposValue, type: 'string', listenerVar: 'binposListener'},
-                    {char: sensorlocCharacteristicFound, el: sensorlocValue, type: 'string', listenerVar: 'sensorlocListener'},
-                    {char: sensortypeCharacteristicFound, el: sensortypeValue, type: 'uint8', listenerVar: 'sensortypeListener'}
+                    {char: itemnameCharacteristicFound, el: itemnameValue, type: 'string'},
+                    {char: itemcatCharacteristicFound, el: itemcatValue, type: 'string'},
+                    {char: quantityCharacteristicFound, el: quantityValue, type: 'string'},
+                    {char: weightCharacteristicFound, el: weightValue, type: 'uint8'},
+                    {char: maxweightCharacteristicFound, el: maxweightValue, type: 'uint8'},
+                    {char: levelCharacteristicFound, el: levelValue, type: 'uint8'},
+                    {char: binposCharacteristicFound, el: binposValue, type: 'string'},
+                    {char: sensorlocCharacteristicFound, el: sensorlocValue, type: 'string'},
+                    {char: sensortypeCharacteristicFound, el: sensortypeValue, type: 'uint8'}
                 ];
 
-                for (let c of allChars) {
-                    try {
-                        // Read initial value
-                        const value = await c.char.readValue();
-                        const decoded = decodeValue(value, c.type);
-                        if (c.el.tagName === "INPUT") c.el.value = decoded;
-                        else c.el.innerHTML = decoded;
+                const promises = allChars.map((c, index) => {
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            setupNotification(c.char, c.el, c.type).then(listener => {
+                                switch(c.el.id) {
+                                    case 'itemname': itemnameListener = listener; break;
+                                    case 'itemcat': itemcatListener = listener; break;
+                                    case 'quantity': quantityListener = listener; break;
+                                    case 'weight': weightListener = listener; break;
+                                    case 'maxweight': maxweightListener = listener; break;
+                                    case 'level': levelListener = listener; break;
+                                    case 'binpos': binposListener = listener; break;
+                                    case 'sensorloc': sensorlocListener = listener; break;
+                                    case 'sensortype': sensortypeListener = listener; break;
+                                }
+                                resolve();
+                            });
+                        }, index * 200);
+                    });
+                });
 
-                        // Start notifications
-                        const listener = event => {
-                            const val = decodeValue(event.target.value, c.type);
-                            if (c.el.tagName === "INPUT") c.el.value = val;
-                            else c.el.innerHTML = val;
-                            timestampContainer.innerHTML = getDateTime();
-                        };
-                        await c.char.startNotifications();
-                        c.char.addEventListener('characteristicvaluechanged', listener);
-                        window[c.listenerVar] = listener;
-                    } catch (err) {
-                        console.log("Error reading/starting notifications for", c.el.id, err);
-                    }
-                }
-
-                // Enable inputs/buttons after all first reads
-                const inputs = [
-                    itemnameValue, itemcatValue, quantityValue, weightValue, 
-                    maxweightValue, levelValue, binposValue, sensorlocValue
-                ];
-                inputs.forEach(input => input.disabled = false);
-                ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton'].forEach(id => setButtonEnabled(id, true));
+                return Promise.all(promises);
             }
 
             setupAllNotifications().then(() => {
