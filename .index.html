@@ -262,6 +262,8 @@
 <button id="saveAllButton" class="btn-saveall" disabled>Save All</button>
 </body>
 <script>
+
+document.addEventListener('DOMContentLoaded',()=> {
     // DOM Elements
     const connectButton = document.getElementById('connectBleButton');
     const disconnectButton = document.getElementById('disconnectBleButton');
@@ -280,6 +282,45 @@
     const binposValue = document.getElementById('binpos');
     const sensorlocValue = document.getElementById('sensorloc')
     const sensortypeValue = document.getElementById('sensortype');
+});
+
+    
+    var deviceName ='WeightMonitor';
+    var bleService = '19b10010-e8f2-537e-4f6c-d1047652abcd';
+
+    //Characteristics
+    var itemnameCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc3'; 
+    var itemcatCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc8';
+    var quantityCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abca';
+    var weightCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc1';
+    var maxweightCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc5';
+    var levelCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc2';
+    var binposCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc4';
+    var sensorlocCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc9';
+    var sensortypeCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc7';
+    
+    //Global Variables to Handle Bluetooth
+    var bleServer;
+    var bleServiceFound;
+    var itemnameCharacteristicFound;
+    var itemcatCharacteristicFound;
+    var quantityCharacteristicFound;
+    var weightCharacteristicFound;
+    var maxweightCharacteristicFound;
+    var levelCharacteristicFound;
+    var binposCharacteristicFound;
+    var sensorlocCharacteristicFound;
+    var sensortypeCharacteristicFound;
+
+    var itemnameListener;
+    var itemcatListener;
+    var quantityListener;
+    var weightListener;
+    var maxweightListener;
+    var levelListener;
+    var binposListener;
+    var sensorlocListener;
+    var sensortypeListener;
 
     //Update Item Name
     function updateItemName() {
@@ -416,43 +457,6 @@
             alert("BLE device not connected.");
         }
     }
-
-    var deviceName ='WeightMonitor';
-    var bleService = '19b10010-e8f2-537e-4f6c-d1047652abcd';
-
-    //Characteristics
-    var itemnameCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc3'; 
-    var itemcatCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc8';
-    var quantityCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abca';
-    var weightCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc1';
-    var maxweightCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc5';
-    var levelCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc2';
-    var binposCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc4';
-    var sensorlocCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc9';
-    var sensortypeCharacteristic = '19b10010-e8f2-537e-4f6c-d1047652abc7';
-    
-    //Global Variables to Handle Bluetooth
-    var bleServer;
-    var bleServiceFound;
-    var itemnameCharacteristicFound;
-    var itemcatCharacteristicFound;
-    var quantityCharacteristicFound;
-    var weightCharacteristicFound;
-    var maxweightCharacteristicFound;
-    var levelCharacteristicFound;
-    var binposCharacteristicFound;
-    var sensorlocCharacteristicFound;
-    var sensortypeCharacteristicFound;
-
-    var itemnameListener;
-    var itemcatListener;
-    var quantityListener;
-    var weightListener;
-    var maxweightListener;
-    var levelListener;
-    var binposListener;
-    var sensorlocListener;
-    var sensortypeListener;
 
     // Connect Button (search for BLE Devices only if BLE is available)
     connectButton.addEventListener('click', (event) => {
