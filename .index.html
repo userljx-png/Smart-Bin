@@ -458,7 +458,11 @@
     // Connect Button (search for BLE Devices only if BLE is available)
     connectButton.addEventListener('click', (event) => {
         if (isWebBluetoothEnabled()){
-            connectToDevice();
+            if(isMobile()){
+                setTimeout(connectToDevice, 200); // 200ms delay for mobile
+            } else {
+                connectToDevice();
+            }
         }
     });
 
@@ -489,9 +493,66 @@
       return /Mobi|Android/i.test(navigator.userAgent);
     }
 
+    function resetListeners() {
+        if(itemnameCharacteristicFound && itemnameListener){
+            itemnameCharacteristicFound.removeEventListener('characteristicvaluechanged', itemnameListener);
+            itemnameCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(itemcatCharacteristicFound && itemcatListener){
+            itemcatCharacteristicFound.removeEventListener('characteristicvaluechanged', itemcatListener);
+            itemcatCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(quantityCharacteristicFound && quantityListener){
+            quantityCharacteristicFound.removeEventListener('characteristicvaluechanged', quantityListener);
+            quantityCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(weightCharacteristicFound && weightListener){
+            weightCharacteristicFound.removeEventListener('characteristicvaluechanged', weightListener);
+            weightCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(maxweightCharacteristicFound && maxweightListener){
+            maxweightCharacteristicFound.removeEventListener('characteristicvaluechanged', maxweightListener);
+            maxweightCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(levelCharacteristicFound && levelListener){
+            levelCharacteristicFound.removeEventListener('characteristicvaluechanged', levelListener);
+            levelCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(binposCharacteristicFound && binposListener){
+            binposCharacteristicFound.removeEventListener('characteristicvaluechanged', binposListener);
+            binposCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(sensorlocCharacteristicFound && sensorlocListener){
+            sensorlocCharacteristicFound.removeEventListener('characteristicvaluechanged', sensorlocListener);
+            sensorlocCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+        if(sensortypeCharacteristicFound && sensortypeListener){
+            sensortypeCharacteristicFound.removeEventListener('characteristicvaluechanged', sensortypeListener);
+            sensortypeCharacteristicFound.stopNotifications().catch(()=>{});
+        }
+
+        // Clear all listener references
+        itemnameListener = itemcatListener = quantityListener = weightListener =
+        maxweightListener = levelListener = binposListener = sensorlocListener = sensortypeListener = null;
+    }
+
     // Connect to BLE Device and Enable Notifications
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
+
+        resetListeners();
+
+        // Clear characteristic references
+        itemnameCharacteristicFound = null;
+        itemcatCharacteristicFound = null;
+        quantityCharacteristicFound = null;
+        weightCharacteristicFound = null;
+        maxweightCharacteristicFound = null;
+        levelCharacteristicFound = null;
+        binposCharacteristicFound = null;
+        sensorlocCharacteristicFound = null;
+        sensortypeCharacteristicFound = null;
+
         navigator.bluetooth.requestDevice({
             filters: [{name: deviceName}],
             optionalServices: [bleService]
@@ -533,7 +594,7 @@
             [itemnameCharacteristicFound, itemcatCharacteristicFound, quantityCharacteristicFound, weightCharacteristicFound,
             maxweightCharacteristicFound, levelCharacteristicFound, binposCharacteristicFound,
             sensorlocCharacteristicFound, sensortypeCharacteristicFound] = characteristics;
-
+            
             // Helper function to decode data
             function decodeValue(data, type) {
               if (type === 'uint8') {
@@ -563,7 +624,7 @@
                         const value = decodeValue(event.target.value, type);
                         if (element.tagName === "INPUT") element.value = value;
                         else element.innerHTML = value;
-                        timestampContainer.innerHTML = getDateTime();
+                        document.getElementById("timestamp").textContent = getDateTime();
                     };
 
                     characteristic.readValue()
@@ -587,7 +648,7 @@
             }
 
             // Safe mobile connect: stagger notifications to avoid mobile BLE overload
-            function setupAllNotifications() {
+            async function setupAllNotifications() {
                 const allChars = [
                     {char: itemnameCharacteristicFound, el: itemnameValue, type: 'string'},
                     {char: itemcatCharacteristicFound, el: itemcatValue, type: 'string'},
@@ -600,39 +661,38 @@
                     {char: sensortypeCharacteristicFound, el: sensortypeValue, type: 'uint8'}
                 ];
 
-                const promises = allChars.map((c, index) => {
-                    return new Promise(resolve => {
-                        setTimeout(() => {
-                            setupNotification(c.char, c.el, c.type).then(listener => {
-                                switch(c.el.id) {
-                                    case 'itemname': itemnameListener = listener; break;
-                                    case 'itemcat': itemcatListener = listener; break;
-                                    case 'quantity': quantityListener = listener; break;
-                                    case 'weight': weightListener = listener; break;
-                                    case 'maxweight': maxweightListener = listener; break;
-                                    case 'level': levelListener = listener; break;
-                                    case 'binpos': binposListener = listener; break;
-                                    case 'sensorloc': sensorlocListener = listener; break;
-                                    case 'sensortype': sensortypeListener = listener; break;
-                                }
-                                resolve();
-                            });
-                        }, index * 200);
-                    });
-                });
+                for (let c of allChars) {
+                    try {
+                        const listener = await setupNotification(c.char, c.el, c.type);
+                        // Save listener
+                        switch(c.el.id) {
+                            case 'itemname': itemnameListener = listener; break;
+                            case 'itemcat': itemcatListener = listener; break;
+                            case 'quantity': quantityListener = listener; break;
+                            case 'weight': weightListener = listener; break;
+                            case 'maxweight': maxweightListener = listener; break;
+                            case 'level': levelListener = listener; break;
+                            case 'binpos': binposListener = listener; break;
+                            case 'sensorloc': sensorlocListener = listener; break;
+                            case 'sensortype': sensortypeListener = listener; break;
+                        }
+                    } catch(err) {
+                        console.log("Failed to setup", c.el.id, err);
+                    }
+                    await new Promise(res => setTimeout(res, 600)); // Increase delay for mobile stability
+                }
 
-                return Promise.all(promises);
+                timestampContainer.innerHTML = getDateTime();
+
+                // Enable inputs/buttons after first read
+                const inputs = [itemnameValue, itemcatValue, quantityValue, weightValue, maxweightValue, levelValue, binposValue, sensorlocValue];
+                inputs.forEach(input => input.disabled = false);
+
+                ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton']
+                    .forEach(id => setButtonEnabled(id, true));
             }
 
-            setupAllNotifications().then(() => {
-                // Enable input fields and save buttons only after first values loaded
-                const inputs = [
-                    itemnameValue, itemcatValue, quantityValue, weightValue, 
-                    maxweightValue, levelValue, binposValue, sensorlocValue
-                ];
-                inputs.forEach(input => input.disabled = false);
-                ['saveItemNameButton','saveItemCatButton','saveQuantityButton','saveWeightButton','saveMaxWeightButton','saveLevelButton','saveBinPosButton','saveSensorLocButton'].forEach(id => setButtonEnabled(id, true));
-            });
+            setupAllNotifications();
 
         })
         .catch(error => {
@@ -696,12 +756,6 @@
         clearValues();
     }
 
-    function handleCharacteristicChange(event){
-        const newValueReceived = new TextDecoder().decode(event.target.value);
-        console.log("Characteristic value changed: ", newValueReceived);
-        itemnameValue.innerHTML = newValueReceived;
-        timestampContainer.innerHTML = getDateTime();
-    }
 
     function disconnectDevice() {
         console.log("Disconnect Device.");
@@ -768,6 +822,15 @@
     }
 
     clearValues();
+    itemnameListener = null;
+    itemcatListener = null;
+    quantityListener = null;
+    weightListener = null;
+    maxweightListener = null;
+    levelListener = null;
+    binposListener = null;
+    sensorlocListener = null;
+    sensortypeListener = null;
 
 </script>
 
