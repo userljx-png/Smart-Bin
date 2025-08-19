@@ -558,7 +558,6 @@
 
             // Setup notifications for each characteristic
             function setupNotification(characteristic, element, type='string') {
-
                 const listener = event => {
                     const value = decodeValue(event.target.value, type);
                     if (element.tagName === "INPUT") element.value = value;
@@ -566,9 +565,9 @@
                     timestampContainer.innerHTML = getDateTime();
                 };
 
-                // Always attempt to read initial value with retries
-                function readValueWithRetry(retries = 5) {
-                    characteristic.readValue()
+                function readValueWithRetry(retries = 10) {  // increase retries
+                    setTimeout(() => {  // small delay before first read
+                        characteristic.readValue()
                         .then(value => {
                             const decoded = decodeValue(value, type);
                             if (element.tagName === "INPUT") element.value = decoded;
@@ -582,10 +581,10 @@
                                 console.log("Read failed for", element.id, err);
                             }
                         });
+                    }, 300); // 300ms delay
                 }
                 readValueWithRetry();
 
-                // Start notifications
                 characteristic.startNotifications()
                     .then(() => {
                         characteristic.addEventListener('characteristicvaluechanged', listener);
