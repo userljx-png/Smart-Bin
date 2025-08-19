@@ -539,7 +539,20 @@
     // Connect to BLE Device and Enable Notifications
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
+
         resetListeners();
+
+        // Clear characteristic references
+        itemnameCharacteristicFound = null;
+        itemcatCharacteristicFound = null;
+        quantityCharacteristicFound = null;
+        weightCharacteristicFound = null;
+        maxweightCharacteristicFound = null;
+        levelCharacteristicFound = null;
+        binposCharacteristicFound = null;
+        sensorlocCharacteristicFound = null;
+        sensortypeCharacteristicFound = null;
+        
         navigator.bluetooth.requestDevice({
             filters: [{name: deviceName}],
             optionalServices: [bleService]
