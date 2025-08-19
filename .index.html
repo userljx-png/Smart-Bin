@@ -552,7 +552,7 @@
         binposCharacteristicFound = null;
         sensorlocCharacteristicFound = null;
         sensortypeCharacteristicFound = null;
-        
+
         navigator.bluetooth.requestDevice({
             filters: [{name: deviceName}],
             optionalServices: [bleService]
@@ -624,7 +624,7 @@
                         const value = decodeValue(event.target.value, type);
                         if (element.tagName === "INPUT") element.value = value;
                         else element.innerHTML = value;
-                        timestampContainer.innerHTML = getDateTime();
+                        document.getElementById("timestamp").textContent = getDateTime();
                     };
 
                     characteristic.readValue()
