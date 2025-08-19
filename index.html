@@ -489,6 +489,45 @@
       return /Mobi|Android/i.test(navigator.userAgent);
     }
 
+    async function disconnectAllNotifications() {
+        if (!bleServer) return;
+        const chars = [
+            {char: itemnameCharacteristicFound, listener: itemnameListener},
+            {char: itemcatCharacteristicFound, listener: itemcatListener},
+            {char: quantityCharacteristicFound, listener: quantityListener},
+            {char: weightCharacteristicFound, listener: weightListener},
+            {char: maxweightCharacteristicFound, listener: maxweightListener},
+            {char: levelCharacteristicFound, listener: levelListener},
+            {char: binposCharacteristicFound, listener: binposListener},
+            {char: sensorlocCharacteristicFound, listener: sensorlocListener},
+            {char: sensortypeCharacteristicFound, listener: sensortypeListener},
+        ];
+
+        for (let c of chars) {
+            if (c.char && c.listener) {
+                try {
+                    await c.char.stopNotifications();
+                    c.char.removeEventListener('characteristicvaluechanged', c.listener);
+                } catch (err) {
+                    console.log("Error stopping notifications:", err);
+                }
+            }
+        }
+    }
+
+    // Call this at the very start of connectToDevice
+    disconnectAllNotifications();
+
+    itemnameListener = null;
+    itemcatListener = null;
+    quantityListener = null;
+    weightListener = null;
+    maxweightListener = null;
+    levelListener = null;
+    binposListener = null;
+    sensorlocListener = null;
+    sensortypeListener = null;
+    
     // Connect to BLE Device and Enable Notifications
     function connectToDevice(){
         console.log('Initializing Bluetooth...');
